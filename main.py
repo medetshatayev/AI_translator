@@ -66,24 +66,22 @@ def main():
 
             if auto_detect_translate:
                 detected_src_lang = detect_language(translate_text_input)
-                if detected_src_lang:
+                if detected_src_lang in ['ru', 'en']:
                     st.info(
-                        f"Автоматически определённый исходный язык: **{'Русский' if detected_src_lang == 'ru' else 'Английский' if detected_src_lang == 'en' else 'Казахский'}**")
+                        f"Автоматически определённый исходный язык: **{'Русский' if detected_src_lang == 'ru' else 'Английский'}**")
                     src_lang = detected_src_lang
                 else:
                     st.warning(
                         "Не удалось определить язык или язык не поддерживается. Пожалуйста, выберите исходный язык вручную.")
-                    src_lang = st.selectbox("Выберите исходный язык", ("ru", "en", "kk"))
+                    src_lang = st.selectbox("Выберите исходный язык", ("ru", "en"))
             else:
-                src_lang = st.selectbox("Выберите исходный язык", ("ru", "en", "kk"))
+                src_lang = st.selectbox("Выберите исходный язык", ("ru", "en"))
 
             # Choose target language
             if src_lang == "ru":
                 available_tgt_langs = ["en"]
             elif src_lang == "en":
                 available_tgt_langs = ["ru"]
-            elif src_lang == "kk":
-                available_tgt_langs = ["en"]
             else:
                 available_tgt_langs = []
 
@@ -101,6 +99,8 @@ def main():
                             file_name=f"translated_text.txt",
                             mime='text/plain'
                         )
+                    else:
+                        st.warning("Перевод не выполнен. Пожалуйста, проверьте введенный текст и попробуйте снова.")
 
     elif functionality == "Анализ удобочитаемости":
         # Readability analysis functionality
@@ -127,16 +127,16 @@ def main():
 
             if auto_detect:
                 detected_lang = detect_language(text)
-                if detected_lang:
+                if detected_lang in ['ru', 'en']:
                     st.info(
-                        f"Автоматически определённый язык: **{'Русский' if detected_lang == 'ru' else 'Английский' if detected_lang == 'en' else 'Казахский'}**")
+                        f"Автоматически определённый язык: **{'Русский' if detected_lang == 'ru' else 'Английский'}**")
                     lang_code = detected_lang
                 else:
                     st.warning(
                         "Не удалось определить язык или язык не поддерживается. Пожалуйста, выберите язык вручную.")
-                    lang_code = st.selectbox("Выберите язык текста", ("ru", "en", "kk"))
+                    lang_code = st.selectbox("Выберите язык текста", ("ru", "en"))
             else:
-                lang_code = st.selectbox("Выберите язык текста", ("ru", "en", "kk"))
+                lang_code = st.selectbox("Выберите язык текста", ("ru", "en"))
 
             if st.button("Анализировать"):
                 analyze_readability(text, lang_code, sentiment_analyzer)

@@ -1,33 +1,46 @@
 # models/transformers_models.py
 
 import torch
-from transformers import pipeline
+from transformers import pipeline, AutoModelForSeq2SeqLM, AutoTokenizer
 
 def get_device():
-    if torch.backends.mps.is_available():
-        return "mps"
-    elif torch.cuda.is_available():
-        return "cuda"
+    if torch.cuda.is_available():
+        print("CUDA is available. Using GPU.")
+        return torch.device("cuda:0")  # Use GPU index 0
     else:
-        return "cpu"
+        print("CUDA is not available. Using CPU.")
+        return torch.device("cpu")
 
 def load_translation_models():
     device = get_device()
     translation_models = {
-        ("ru", "en"): "Helsinki-NLP/opus-mt-ru-en",
         ("en", "ru"): "Helsinki-NLP/opus-mt-en-ru",
+        ("ru", "en"): "Helsinki-NLP/opus-mt-ru-en",
     }
     loaded_models = {}
     for (src, tgt), model_name in translation_models.items():
         try:
-            loaded_models[(src, tgt)] = pipeline(
+            # Load tokenizer and model separately
+            tokenizer = AutoTokenizer.from_pretrained(model_name)
+            model = AutoModelForSeq2SeqLM.from_pretrained(model_name).to(device)
+            # Do not convert the model to FP16 here
+
+            # Create translation pipeline
+            translation_pipeline = pipeline(
                 "translation",
-                model=model_name,
-                device=0 if device == "cuda" else -1
+                model=model,
+                tokenizer=tokenizer,
+                device=0 if device.type == 'cuda' else -1
+                # Do not set torch_dtype here
             )
+
+            # Store the pipeline in the loaded_models dictionary
+            loaded_models[(src, tgt)] = translation_pipeline
+
+            print(f"Loaded model {model_name} on device {device}")
         except Exception as e:
-            # Return None for failed models
             loaded_models[(src, tgt)] = None
+            print(f"Failed to load model {model_name}: {e}")
     return loaded_models
 
 def load_sentiment_analyzer():
@@ -36,9 +49,8 @@ def load_sentiment_analyzer():
         sentiment_analyzer = pipeline(
             "sentiment-analysis",
             model="yiyanghkust/finbert-tone",
-            device=0 if device == "cuda" else -1
+            device=0 if device.type == "cuda" else -1
         )
         return sentiment_analyzer
     except Exception as e:
-        # Return None if loading fails
         return None
