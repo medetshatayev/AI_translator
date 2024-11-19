@@ -7,12 +7,12 @@ st.set_page_config(page_title="Анализ Понятности и Перево
 
 import os
 import tempfile
+import io
+from docx import Document  # New import for Word document creation
 
 # Import modules after setting page config
 from models.nltk_resources import setup_nltk
 from models.transformers_models import (
-    get_device,
-    load_translation_models as _load_translation_models,
     load_sentiment_analyzer as _load_sentiment_analyzer,
 )
 from utils.file_readers import read_file
@@ -22,17 +22,15 @@ from utils.readability_indices import (
     flesch_kincaid_grade_level,
     gunning_fog_index,
     smog_index,
-    classify_readability,
 )
 from utils.formatting import color_code_index
-from utils.translation import translate_text
+from utils.argos_translate import translate_text
 
 def main():
     # Setup NLTK resources
     setup_nltk()
 
     # Load models
-    translation_pipelines = load_translation_models()
     sentiment_analyzer = load_sentiment_analyzer()
 
     # Define the rest of your main function
@@ -43,12 +41,15 @@ def main():
     if functionality == "Перевод":
         # Translation functionality
         st.header("Перевод текста или документов")
-        translate_input_method = st.radio("Выберите способ ввода текста для перевода",
-                                          ("Загрузить файл", "Вставить текст"))
+        translate_input_method = st.radio(
+            "Выберите способ ввода текста для перевода", ("Загрузить файл", "Вставить текст")
+        )
         translate_text_input = ""
 
         if translate_input_method == "Загрузить файл":
-            translate_uploaded_file = st.file_uploader("Выберите файл (.txt, .docx, .pdf)", type=["txt", "docx", "pdf"])
+            translate_uploaded_file = st.file_uploader(
+                "Выберите файл (.txt, .docx, .pdf)", type=["txt", "docx", "pdf"]
+            )
             if translate_uploaded_file is not None:
                 suffix = os.path.splitext(translate_uploaded_file.name)[1]
                 with tempfile.NamedTemporaryFile(delete=False, suffix=suffix) as tmp_file:
@@ -68,11 +69,13 @@ def main():
                 detected_src_lang = detect_language(translate_text_input)
                 if detected_src_lang in ['ru', 'en']:
                     st.info(
-                        f"Автоматически определённый исходный язык: **{'Русский' if detected_src_lang == 'ru' else 'Английский'}**")
+                        f"Автоматически определённый исходный язык: **{'Русский' if detected_src_lang == 'ru' else 'Английский'}**"
+                    )
                     src_lang = detected_src_lang
                 else:
                     st.warning(
-                        "Не удалось определить язык или язык не поддерживается. Пожалуйста, выберите исходный язык вручную.")
+                        "Не удалось определить язык или язык не поддерживается. Пожалуйста, выберите исходный язык вручную."
+                    )
                     src_lang = st.selectbox("Выберите исходный язык", ("ru", "en"))
             else:
                 src_lang = st.selectbox("Выберите исходный язык", ("ru", "en"))
@@ -89,18 +92,31 @@ def main():
                 tgt_lang = st.selectbox("Выберите целевой язык", available_tgt_langs)
                 if st.button("Перевести"):
                     with st.spinner('Выполняется перевод...'):
-                        translated_text = translate_text(translate_text_input, src_lang, tgt_lang, translation_pipelines)
+                        translated_text = translate_text(translate_text_input, src_lang, tgt_lang)
                     if translated_text:
                         st.subheader("Переведённый текст:")
                         st.write(translated_text)
+
+                        # Create a Word document
+                        doc = Document()
+                        doc.add_paragraph(translated_text)
+
+                        # Save the document to a BytesIO object
+                        doc_io = io.BytesIO()
+                        doc.save(doc_io)
+                        doc_io.seek(0)
+
+                        # Provide the download button for the Word document
                         st.download_button(
                             label="Скачать переведённый текст",
-                            data=translated_text,
-                            file_name=f"translated_text.txt",
-                            mime='text/plain'
+                            data=doc_io,
+                            file_name=f"translated_text.docx",
+                            mime='application/vnd.openxmlformats-officedocument.wordprocessingml.document'
                         )
                     else:
                         st.warning("Перевод не выполнен. Пожалуйста, проверьте введенный текст и попробуйте снова.")
+            else:
+                st.warning("Выбранный исходный язык не поддерживается для перевода.")
 
     elif functionality == "Анализ удобочитаемости":
         # Readability analysis functionality
@@ -129,11 +145,13 @@ def main():
                 detected_lang = detect_language(text)
                 if detected_lang in ['ru', 'en']:
                     st.info(
-                        f"Автоматически определённый язык: **{'Русский' if detected_lang == 'ru' else 'Английский'}**")
+                        f"Автоматически определённый язык: **{'Русский' if detected_lang == 'ru' else 'Английский'}**"
+                    )
                     lang_code = detected_lang
                 else:
                     st.warning(
-                        "Не удалось определить язык или язык не поддерживается. Пожалуйста, выберите язык вручную.")
+                        "Не удалось определить язык или язык не поддерживается. Пожалуйста, выберите язык вручную."
+                    )
                     lang_code = st.selectbox("Выберите язык текста", ("ru", "en"))
             else:
                 lang_code = st.selectbox("Выберите язык текста", ("ru", "en"))
@@ -146,8 +164,6 @@ def analyze_readability(text, lang_code, sentiment_analyzer):
     fkgl = flesch_kincaid_grade_level(text, lang_code)
     fog = gunning_fog_index(text, lang_code)
     smog = smog_index(text, lang_code)
-
-    readability_class = classify_readability(fre, fkgl, fog, smog)
 
     if (lang_code == 'ru' or lang_code == 'en') and sentiment_analyzer is not None:
         try:
@@ -163,17 +179,24 @@ def analyze_readability(text, lang_code, sentiment_analyzer):
 
     # Display results in Streamlit
     st.subheader("Результаты анализа")
-    st.write(f"**Классификация удобочитаемости:** {readability_class}")
 
     # Display indices with color coding
-    st.markdown(f"**Индекс удобочитаемости Флеша:** {color_code_index('Flesch Reading Ease', fre)}",
-                unsafe_allow_html=True)
-    st.markdown(f"**Индекс Флеша-Кинкейда:** {color_code_index('Flesch-Kincaid Grade Level', fkgl)}",
-                unsafe_allow_html=True)
-    st.markdown(f"**Индекс тумана Ганнинга:** {color_code_index('Gunning Fog Index', fog)}",
-                unsafe_allow_html=True)
-    st.markdown(f"**Индекс SMOG:** {color_code_index('SMOG Index', smog)}",
-                unsafe_allow_html=True)
+    st.markdown(
+        f"**Индекс удобочитаемости Флеша:** {color_code_index('Flesch Reading Ease', fre)}",
+        unsafe_allow_html=True,
+    )
+    st.markdown(
+        f"**Индекс Флеша-Кинкейда:** {color_code_index('Flesch-Kincaid Grade Level', fkgl)}",
+        unsafe_allow_html=True,
+    )
+    st.markdown(
+        f"**Индекс тумана Ганнинга:** {color_code_index('Gunning Fog Index', fog)}",
+        unsafe_allow_html=True,
+    )
+    st.markdown(
+        f"**Индекс SMOG:** {color_code_index('SMOG Index', smog)}",
+        unsafe_allow_html=True,
+    )
 
     st.markdown("---")
 
@@ -187,17 +210,10 @@ def analyze_readability(text, lang_code, sentiment_analyzer):
     st.markdown("---")
 
 @st.cache_resource
-def load_translation_models():
-    loaded_models = _load_translation_models()
-    if not loaded_models:
-        st.error("Ошибка при загрузке моделей перевода.")
-    return loaded_models
-
-@st.cache_resource
 def load_sentiment_analyzer():
     analyzer = _load_sentiment_analyzer()
     if not analyzer:
-        st.error("Ошибка при загрузке модели для анализа тональности FinBERT.")
+        st.error("Ошибка при загрузке модели для анализа тональности.")
     return analyzer
 
 if __name__ == "__main__":

@@ -3,8 +3,8 @@ nltk
 pyphen
 python-docx
 PyPDF2
-torch
 transformers
 langdetect
 sacremoses
 sentencepiece
+argostranslate
