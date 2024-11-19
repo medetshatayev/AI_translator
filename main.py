@@ -8,7 +8,7 @@ st.set_page_config(page_title="Анализ Понятности и Перево
 import os
 import tempfile
 import io
-from docx import Document  # New import for Word document creation
+from docx import Document
 
 # Import modules after setting page config
 from models.nltk_resources import setup_nltk

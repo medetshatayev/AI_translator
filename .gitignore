@@ -25,7 +25,6 @@ parts/
 sdist/
 develop-eggs/
 .installed.cfg
-*.egg-info/
 
 # PyInstaller
 *.manifest
@@ -72,15 +71,6 @@ ipython_config.py
 # Rope project settings
 .ropeproject
 
-# Environments
-.env
-.venv
-env/
-venv/
-ENV/
-env.bak/
-venv.bak/
-
 # mypy
 .mypy_cache/
 .dmypy.json
@@ -115,4 +105,3 @@ secrets.yml
 
 # Output of build tools
 out/
-build/
