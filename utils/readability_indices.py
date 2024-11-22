@@ -63,11 +63,3 @@ def smog_index(text, lang):
         smog = 0
     return smog
 
-def classify_readability(fre, fkgl, fog, smog):
-    avg_score = (fre + (20 - fkgl) + (20 - fog) + (20 - smog)) / 4
-    if avg_score > 75:
-        return "Легкий текст"
-    elif 50 <= avg_score <= 75:
-        return "Средняя сложность"
-    else:
-        return "Сложный текст"

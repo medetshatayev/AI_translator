@@ -1,10 +1,10 @@
 # main.py
 
 import streamlit as st
-
+import logging
 # Set page configuration
 st.set_page_config(page_title="Анализ Понятности и Перевод Текста", layout="wide")
-
+logging.basicConfig(level=logging.DEBUG)
 import os
 import tempfile
 import io
@@ -170,7 +170,7 @@ def analyze_readability(text, lang_code, sentiment_analyzer):
             sentiment = sentiment_analyzer(text)
             sentiment_label = sentiment[0]['label']
             sentiment_score = sentiment[0]['score']
-        except Exception as e:
+        except:
             sentiment_label = "Не удалось выполнить анализ тональности."
             sentiment_score = None
     else:

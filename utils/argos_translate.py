@@ -1,15 +1,13 @@
 # utils/argos_translate.py
 
 import os
+os.environ["ARGOS_DEVICE_TYPE"] = "cuda"  # Set to "cuda" or "auto"
 import argostranslate.package
 import argostranslate.translate
 import streamlit as st
 import traceback
-
-# Set the data directory
-data_dir = os.path.join(os.getcwd(), "argos_data")
-os.environ["ARGOS_TRANSLATE_DATA_DIR"] = data_dir
-os.makedirs(data_dir, exist_ok=True)
+import logging
+logging.basicConfig(level=logging.DEBUG)
 
 def install_language_package(from_code, to_code):
     # Update package index

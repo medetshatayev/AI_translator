@@ -3,16 +3,7 @@
 import torch
 from transformers import pipeline, AutoModelForSeq2SeqLM, AutoTokenizer
 
-def get_device():
-    if torch.cuda.is_available():
-        print("CUDA is available. Using GPU.")
-        return torch.device("cuda:0")  # Use GPU index 0
-    else:
-        print("CUDA is not available. Using CPU.")
-        return torch.device("cpu")
-
 def load_translation_models():
-    device = get_device()
     translation_models = {
         ("en", "ru"): "Helsinki-NLP/opus-mt-en-ru",
         ("ru", "en"): "Helsinki-NLP/opus-mt-ru-en",
@@ -30,8 +21,7 @@ def load_translation_models():
                 "translation",
                 model=model,
                 tokenizer=tokenizer,
-                device=0 if device.type == 'cuda' else -1
-                # Do not set torch_dtype here
+                device=0
             )
 
             # Store the pipeline in the loaded_models dictionary
@@ -44,13 +34,12 @@ def load_translation_models():
     return loaded_models
 
 def load_sentiment_analyzer():
-    device = get_device()
     try:
         sentiment_analyzer = pipeline(
             "sentiment-analysis",
             model="yiyanghkust/finbert-tone",
-            device=0 if device.type == "cuda" else -1
+            device=0
         )
         return sentiment_analyzer
-    except Exception as e:
+    except:
         return None
