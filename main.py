@@ -12,9 +12,7 @@ from docx import Document
 
 # Import modules after setting page config
 from models.nltk_resources import setup_nltk
-from models.transformers_models import (
-    load_sentiment_analyzer as _load_sentiment_analyzer,
-)
+from models.transformers_models import load_sentiment_analyzer
 from utils.file_readers import read_file
 from utils.text_processing import detect_language
 from utils.readability_indices import (
@@ -26,12 +24,19 @@ from utils.readability_indices import (
 from utils.formatting import color_code_index
 from utils.argos_translate import translate_text
 
+@st.cache_resource
+def load_sentiment_analyzer_cached():
+    analyzer = load_sentiment_analyzer()
+    if not analyzer:
+        st.error("Ошибка при загрузке модели для анализа тональности.")
+    return analyzer
+
 def main():
     # Setup NLTK resources
     setup_nltk()
 
     # Load models
-    sentiment_analyzer = load_sentiment_analyzer()
+    sentiment_analyzer = load_sentiment_analyzer_cached()
 
     # Define the rest of your main function
     st.title("Анализ Понятности Текста и Перевод")
@@ -208,13 +213,6 @@ def analyze_readability(text, lang_code, sentiment_analyzer):
         st.write(sentiment_label)
 
     st.markdown("---")
-
-@st.cache_resource
-def load_sentiment_analyzer():
-    analyzer = _load_sentiment_analyzer()
-    if not analyzer:
-        st.error("Ошибка при загрузке модели для анализа тональности.")
-    return analyzer
 
 if __name__ == "__main__":
     main()

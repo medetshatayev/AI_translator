@@ -1,45 +1,34 @@
 # models/transformers_models.py
 
-import torch
-from transformers import pipeline, AutoModelForSeq2SeqLM, AutoTokenizer
-
-def load_translation_models():
-    translation_models = {
-        ("en", "ru"): "Helsinki-NLP/opus-mt-en-ru",
-        ("ru", "en"): "Helsinki-NLP/opus-mt-ru-en",
-    }
-    loaded_models = {}
-    for (src, tgt), model_name in translation_models.items():
-        try:
-            # Load tokenizer and model separately
-            tokenizer = AutoTokenizer.from_pretrained(model_name)
-            model = AutoModelForSeq2SeqLM.from_pretrained(model_name).to(device)
-            # Do not convert the model to FP16 here
-
-            # Create translation pipeline
-            translation_pipeline = pipeline(
-                "translation",
-                model=model,
-                tokenizer=tokenizer,
-                device=0
-            )
-
-            # Store the pipeline in the loaded_models dictionary
-            loaded_models[(src, tgt)] = translation_pipeline
-
-            print(f"Loaded model {model_name} on device {device}")
-        except Exception as e:
-            loaded_models[(src, tgt)] = None
-            print(f"Failed to load model {model_name}: {e}")
-    return loaded_models
+from transformers import AutoModelForSequenceClassification, AutoTokenizer, pipeline
+import os
+import logging
 
 def load_sentiment_analyzer():
     try:
+        local_model_dir = 'local_models/finbert-tone'
+
+        # Check if the local model directory exists
+        if not os.path.exists(local_model_dir):
+            logging.error(f"Local FinBERT model not found at '{local_model_dir}'.")
+            return None
+
+        # Load the model and tokenizer from the local directory
+        model = AutoModelForSequenceClassification.from_pretrained(local_model_dir)
+        tokenizer = AutoTokenizer.from_pretrained(local_model_dir)
+
+        # Initialize the pipeline with the local model and tokenizer
         sentiment_analyzer = pipeline(
             "sentiment-analysis",
-            model="yiyanghkust/finbert-tone",
-            device=0
+            model=model,
+            tokenizer=tokenizer,
+            device=0  # Set to -1 for CPU or 0 for GPU
         )
+
+        logging.debug("Sentiment analyzer loaded successfully using the local FinBERT model.")
+
         return sentiment_analyzer
-    except:
+
+    except Exception as e:
+        logging.error(f"Error loading sentiment analyzer: {e}")
         return None

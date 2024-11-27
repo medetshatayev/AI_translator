@@ -11,7 +11,7 @@ logging.basicConfig(level=logging.DEBUG)
 
 def install_language_package(from_code, to_code):
     # Update package index
-    argostranslate.package.update_package_index()
+    # argostranslate.package.update_package_index()
 
     # Get available packages
     available_packages = argostranslate.package.get_available_packages()

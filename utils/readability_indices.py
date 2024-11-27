@@ -2,7 +2,6 @@
 
 from nltk.tokenize import sent_tokenize, word_tokenize
 from .text_processing import count_syllables
-import streamlit as st
 
 def flesch_reading_ease(text, lang):
     sentences = sent_tokenize(text, language='russian' if lang == 'ru' else 'english')
